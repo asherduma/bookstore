@@ -1,4 +1,6 @@
 import pg from 'pg';
+import dotenv from "dotenv";
+dotenv.config()
 
 // We use a global variable to prevent hot-reloading from creating 
 // dozens of zombie connection pools during local development.
