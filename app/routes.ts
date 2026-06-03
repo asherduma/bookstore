@@ -8,4 +8,5 @@ export default [
     route("books", "routes/books/index.tsx"),
     route("books/:bookId", "routes/books/$bookId.tsx"),
     route("cart", "routes/cart/index.tsx"),
+    route("cart/checkout", "routes/cart/checkout.tsx"),
 ] satisfies RouteConfig;

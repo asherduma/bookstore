@@ -8,7 +8,7 @@ const CheckoutTransactionTrend = new Trend('transaction_checkout_duration');
 const DBQueryDelayTrend = new Trend('delay_server_side');
 
 // Define target host from environment variable (passed during execution)
-const BASE_URL = __ENV.TARGET_URL || 'http://localhost:3000';
+const BASE_URL = __ENV.TARGET_URL || 'http://localhost:5173';
 
 export const options = {
   // Defining execution stages to test throughput scalability limits
@@ -18,9 +18,10 @@ export const options = {
     { duration: '1m', target: 0 },   // Ramp-down back to 0
   ],
   thresholds: {
-    http_req_failed: ['rate<0.01'], // General stability constraint: Errors must be under 1%
-    'http_req_duration{name:PublicCatalog}': ['p95<250'], // Reads should be snappy
-    'http_req_duration{name:CheckoutTransaction}': ['p95<800'], // Transactions can take slightly longer
+    'http_req_failed': ['rate<0.01'], // General stability constraint: Errors must be under 1%
+    'http_req_duration{name:LandingPage}': ['p(95)<250'],
+    'http_req_duration{name:PublicCatalog}': ['p(95)<250'], // Reads should be snappy
+    'http_req_duration{name:CheckoutTransaction}': ['p(95)<800'], // Transactions can take slightly longer
   },
 };
 
@@ -70,7 +71,7 @@ export default function (data) {
   // We'll target a hardcoded slice of our seeded items (e.g., book ID suffix increments)
   const bookIdOffset = Math.floor(Math.random() * 20) + 1;
   // Note: Replace this with valid seeded UUID strings or an array mapping in a real test run
-  let itemRes = http.get(`${BASE_URL}/books/sample-id-${bookIdOffset}`, {
+  let itemRes = http.get(`${BASE_URL}/books/3d615819-2a0a-4e30-9ea7-381136e69789`, {
     tags: { name: 'BookDetailsJoin' },
   });
   sleep(1);
