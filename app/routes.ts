@@ -9,4 +9,5 @@ export default [
     route("books/:bookId", "routes/books/$bookId.tsx"),
     route("cart", "routes/cart/index.tsx"),
     route("cart/checkout", "routes/cart/checkout.tsx"),
+    route("account/orders", "routes/account/orders.tsx"),
 ] satisfies RouteConfig;

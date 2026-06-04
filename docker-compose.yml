@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # --- Database Container ---
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: bookstore_db_container
+    environment:
+      POSTGRES_USER: bookstore_admin
+      POSTGRES_PASSWORD: production_secure_pass123
+      POSTGRES_DB: bookstore_metrics
+    ports:
+      - "5432:5432" # Keeps port open to host for verification if needed
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - thesis_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookstore_admin -d bookstore_metrics"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # --- React Router 7 Application Container ---
+  web_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bookstore_app_container
+    environment:
+      # Pass the container database connection string
+      # Note how we use the service name 'postgres_db' instead of 'localhost'
+      DATABASE_URL: "postgresql://bookstore_admin:production_secure_pass123@postgres_db:5432/bookstore_metrics?schema=public"
+      PORT: 3000
+    ports:
+      - "8080:3000" # Maps port 8080 on your local machine to port 3000 inside the container
+    networks:
+      - thesis_network
+    depends_on:
+      postgres_db:
+        condition: service_healthy # Ensures the app only boots after DB is fully ready
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  thesis_network:
+    driver: bridge

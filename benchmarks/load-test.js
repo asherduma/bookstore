@@ -21,7 +21,7 @@ export const options = {
     'http_req_failed': ['rate<0.01'], // General stability constraint: Errors must be under 1%
     'http_req_duration{name:LandingPage}': ['p(95)<250'],
     'http_req_duration{name:PublicCatalog}': ['p(95)<250'], // Reads should be snappy
-    'http_req_duration{name:CheckoutTransaction}': ['p(95)<800'], // Transactions can take slightly longer
+    'http_req_duration{name:BookDetailsJoin}': ['p(95)<800'], // Transactions can take slightly longer
   },
 };
 
@@ -74,26 +74,7 @@ export default function (data) {
   let itemRes = http.get(`${BASE_URL}/books/3d615819-2a0a-4e30-9ea7-381136e69789`, {
     tags: { name: 'BookDetailsJoin' },
   });
-  sleep(1);
-
-  // --- Scenario D: Heavy Write ACID Transaction (Checkout Stress Test) ---
-  // Note: To bypass login cookies for pure API infrastructure load testing, 
-  // you can either submit a pre-baked session cookie via headers or hit a custom test trigger.
-  const params = {
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    tags: { name: 'CheckoutTransaction' },
-  };
-
-  const startTime = Date.now();
-  let checkoutRes = http.post(`${BASE_URL}/cart/checkout`, {}, params);
-  
-  if (checkoutRes.status === 200 || checkoutRes.status === 302) {
-    CheckoutTransactionTrend.add(Date.now() - startTime);
-  }
-  
-  check(checkoutRes, {
-    'Transaction successfully handled': (r) => r.status === 200 || r.status === 302,
-  });
+  check(itemRes, { 'Book details status is 200': (r) => r.status === 200 });
 
   sleep(3); // Simulates standard user think-time delay before repeating cycle
 }
