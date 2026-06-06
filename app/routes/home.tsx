@@ -62,9 +62,7 @@ export default function Home() {
           Read! <br />
           <span className="text-blue-600 font-medium">Let's put the phones down and bring back reading. Actual Reading.</span>
         </h1>
-        <p className="text-base text-gray-500 leading-relaxed max-w-2xl mx-auto font-light">
-         No algorithms. No notifications. No scroll fatigue. Just good old-fashioned stories to inspire, entertain, and improve your day.
-        </p>
+
         <div className="pt-2">
           <Link to="/books" className="inline-flex bg-gray-900 text-white rounded-md px-6 py-3 text-sm font-semibold hover:bg-gray-800 transition-all shadow-md">
             Explore Full Repository Catalog &rarr;
