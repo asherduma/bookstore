@@ -138,7 +138,7 @@ export default function BookDetails() {
     <div className="bg-white rounded-xl border border-gray-100 p-6 sm:p-8 shadow-xs">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Book Image */}
-        <div className="aspect-[128/215] bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center max-w-sm mx-auto w-full border border-gray-100">
+        <div className="aspect-[128/215] bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center max-w-xs mx-auto w-full border border-gray-100">
           <img 
             src={book.image_url || "https://placehold.co/400x600?text=Book"} 
             alt={book.title} 
@@ -219,7 +219,7 @@ export default function BookDetails() {
               <div key={review.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-semibold text-gray-800">
-                    {review.first_name} {review.last_name}
+                    {review.first_name}
                   </span>
                   <span className="text-lg text-orange-500">
                     {"★".repeat(review.rating)}

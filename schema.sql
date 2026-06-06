@@ -41,6 +41,8 @@ CREATE TABLE books (
     price NUMERIC(10,2) NOT NULL,
     stock_quantity INTEGER NOT NULL DEFAULT 0,
     image_url TEXT,
+    review_count INT DEFAULT 0,
+    average_rating NUMERIC(3,2) DEFAULT 0.00,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -86,3 +88,7 @@ CREATE TABLE reviews (
 CREATE INDEX idx_books_title ON books(title);
 CREATE INDEX idx_books_author ON books(author);
 CREATE INDEX idx_reviews_book_id ON reviews(book_id);
+CREATE INDEX idx_books_review_count ON books(review_count DESC, title ASC);
+CREATE INDEX idx_books_average_rating ON books(average_rating DESC, review_count DESC);
+CREATE INDEX idx_reviews_user_id ON reviews(user_id);
+CREATE INDEX idx_reviews_pagination ON reviews(book_id, created_at DESC);
