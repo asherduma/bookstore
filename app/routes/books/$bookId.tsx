@@ -3,6 +3,7 @@ import type { Route } from "./+types/$bookId";
 import { query } from "../../lib/db.server";
 import { getSession } from "../../lib/session.server";
 import Button from "../../components/ui/Button";
+import StarRating from "../../components/ui/StarRating";
 
 export async function loader({ params }: Route.LoaderArgs) {
   const { bookId } = params;
@@ -26,7 +27,8 @@ export async function loader({ params }: Route.LoaderArgs) {
      FROM reviews r 
      JOIN users u ON r.user_id = u.id 
      WHERE r.book_id = $1 
-     ORDER BY r.created_at DESC`,
+     ORDER BY r.created_at DESC
+     LIMIT 20`,
     [bookId]
   );
 
@@ -74,7 +76,7 @@ export default function BookDetails() {
     <div className="bg-white rounded-xl border border-gray-100 p-6 sm:p-8 shadow-xs">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Book Image */}
-        <div className="aspect-[3/4] bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center max-w-sm mx-auto w-full border border-gray-100">
+        <div className="aspect-[128/215] bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center max-w-sm mx-auto w-full border border-gray-100">
           <img 
             src={book.image_url || "https://placehold.co/400x600?text=Book"} 
             alt={book.title} 
@@ -90,7 +92,10 @@ export default function BookDetails() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight mb-1">
             {book.title}
           </h1>
-          <p className="text-md text-gray-500 mb-6">by <span className="font-medium text-gray-700">{book.author}</span></p>
+          <p className="text-md text-gray-500">by <span className="font-medium text-gray-700">{book.author}</span></p>
+          <span className="mb-6 text-black">
+            <StarRating rating={book.average_rating} reviewCount={book.review_count} colourStar="text-black" />
+          </span>
           
           <div className="text-2xl font-black text-gray-900 mb-6">
             R {book.price}
@@ -152,10 +157,11 @@ export default function BookDetails() {
               <div key={review.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-semibold text-gray-800">
-                    {review.first_name} {review.last_name}
+                    {review.first_name}
                   </span>
-                  <span className="text-xs text-yellow-500 font-bold">
-                    {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
+                  <span className="text-lg text-orange-500">
+                    {"★".repeat(review.rating)}
+                    {"☆".repeat(5 - review.rating)}
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-gray-600 font-light leading-relaxed">

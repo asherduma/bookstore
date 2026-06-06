@@ -34,8 +34,8 @@ CREATE TABLE categories (
 CREATE TABLE books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     category_id UUID NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
-    title VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL,
     description TEXT NOT NULL,
     isbn VARCHAR(50) UNIQUE,
     price NUMERIC(10,2) NOT NULL,

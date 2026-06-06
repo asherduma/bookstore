@@ -16,7 +16,7 @@ export default function Navbar({ user }: NavbarProps) {
           {/* Logo Brand */}
           <div className="flex">
             <Link to="/" className="text-xl font-bold tracking-tight text-gray-900">
-              MORRARI <span className="text-xs font-light text-gray-400">BOOKS</span>
+              MORRARI BOOKS
             </Link>
           </div>
 

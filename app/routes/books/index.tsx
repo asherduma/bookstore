@@ -1,6 +1,7 @@
 import { useLoaderData, Link, useSearchParams } from "react-router";
 import type { Route } from "./+types/index";
 import { query } from "../../lib/db.server";
+import StarRating from "../../components/ui/StarRating";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -17,7 +18,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // 2. Build the dynamic books query based on category presence
   let booksQuery = `
-    SELECT b.id, b.title, b.author, b.price, b.image_url, c.name as category_name 
+    SELECT b.id, b.title, b.author, b.price, b.image_url, b.average_rating, b.review_count, c.name as category_name 
     FROM books b
     JOIN categories c ON b.category_id = c.id
   `;
@@ -119,7 +120,7 @@ export default function BookCatalog() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {books.map((book) => (
                 <div key={book.id} className="bg-white border border-gray-100 rounded-lg overflow-hidden flex flex-col group shadow-xs">
-                  <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden flex items-center justify-center border-b border-gray-50">
+                  <div className="aspect-[128/215] bg-gray-50 relative overflow-hidden flex items-center justify-center border-b border-gray-50">
                     <img 
                       src={book.image_url || "https://placehold.co/400x600?text=Book"} 
                       alt={book.title} 
@@ -131,10 +132,14 @@ export default function BookCatalog() {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-blue-500 mb-1">
                       {book.category_name}
                     </span>
+                    
                     <h3 className="font-semibold text-gray-900 line-clamp-1 mb-0.5">
                       {book.title}
                     </h3>
-                    <p className="text-xs text-gray-500 mb-4">{book.author}</p>
+                    <p className="text-xs text-gray-500">{book.author}</p>
+                    <div className="text-orange-500 mb-4">
+                      <StarRating rating={book.average_rating} reviewCount={book.review_count} />
+                    </div>
                     <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
                       <span className="text-sm font-bold text-gray-900">R {book.price}</span>
                       <Link 
