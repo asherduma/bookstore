@@ -117,7 +117,7 @@ export default function BookCatalog() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {books.map((book) => (
                 <div key={book.id} className="bg-white border border-gray-100 rounded-lg overflow-hidden flex flex-col group shadow-xs">
                   <div className="aspect-[128/215] bg-gray-50 relative overflow-hidden flex items-center justify-center border-b border-gray-50">
