@@ -1,14 +1,43 @@
-import { useLoaderData, Form, useNavigation, useActionData } from "react-router";
+import { useState, useEffect } from "react";
+import { useLoaderData, Form, useNavigation, useActionData, useFetcher } from "react-router";
 import type { Route } from "./+types/$bookId";
 import { query } from "../../lib/db.server";
 import { getSession } from "../../lib/session.server";
 import Button from "../../components/ui/Button";
 import StarRating from "../../components/ui/StarRating";
 
-export async function loader({ params }: Route.LoaderArgs) {
-  const { bookId } = params;
+interface Review {
+  id: string;
+  first_name: string;
+  last_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
 
-  // Fetch book entry details with Category metadata using a standard relational join
+export async function loader({ params, request }: Route.LoaderArgs) {
+  const { bookId } = params;
+  const url = new URL(request.url);
+  
+  // Detect if this is an background fetcher load-more request
+  const mode = url.searchParams.get("mode");
+  const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+
+  // If fetching additional reviews on the fly, bypass the book query entirely
+  if (mode === "json") {
+    const nextReviewsRes = await query(
+      `SELECT r.*, u.first_name, u.last_name 
+       FROM reviews r 
+       JOIN users u ON r.user_id = u.id 
+       WHERE r.book_id = $1 
+       ORDER BY r.created_at DESC
+       LIMIT 20 OFFSET $2`,
+      [bookId, offset]
+    );
+    return Response.json({ reviews: nextReviewsRes.rows });
+  }
+
+  // --- Initial Full-Page Server Render ---
   const bookRes = await query(
     `SELECT b.*, c.name as category_name 
      FROM books b 
@@ -21,24 +50,23 @@ export async function loader({ params }: Route.LoaderArgs) {
     throw new Response("Book Not Found", { status: 404 });
   }
 
-  // Fetch all existing customer reviews for this specific book
   const reviewsRes = await query(
     `SELECT r.*, u.first_name, u.last_name 
      FROM reviews r 
      JOIN users u ON r.user_id = u.id 
      WHERE r.book_id = $1 
      ORDER BY r.created_at DESC
-     LIMIT 20`,
+     LIMIT 20 OFFSET 0`,
     [bookId]
   );
 
   return {
     book: bookRes.rows[0],
-    reviews: reviewsRes.rows
+    initialReviews: reviewsRes.rows as Review[],
+    bookId
   };
 }
 
-// Action handles adding items directly to the persistent Cart Items table
 export async function action({ request, params }: Route.ActionArgs) {
   const session = await getSession(request);
   const userId = session.get("userId");
@@ -52,7 +80,6 @@ export async function action({ request, params }: Route.ActionArgs) {
   const quantity = parseInt(formData.get("quantity") as string, 10) || 1;
 
   try {
-    // Perform an atomic upsert statement on the cart items table
     await query(
       `INSERT INTO cart_items (user_id, book_id, quantity) 
        VALUES ($1, $2, $3)
@@ -67,10 +94,45 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function BookDetails() {
-  const { book, reviews } = useLoaderData<typeof loader>();
+  const { book, initialReviews, bookId } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+
+  // --- Client Side Pagination State Machine ---
+  const fetcher = useFetcher<{ reviews: Review[] }>();
+  const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  const [offset, setOffset] = useState(20);
+  const [hasMore, setHasMore] = useState(initialReviews.length === 20);
+
+  // Sync state if initialReviews changes (e.g., when transitioning between books)
+  useEffect(() => {
+    setReviews(initialReviews);
+    setOffset(20);
+    setHasMore(initialReviews.length === 20);
+  }, [initialReviews]);
+
+  // Listen to the fetcher data stream and merge arrays
+  useEffect(() => {
+    if (fetcher.data?.reviews) {
+      const newReviews = fetcher.data.reviews;
+      if (newReviews.length > 0) {
+        setReviews((prev) => [...prev, ...newReviews]);
+        setOffset((prev) => prev + 20);
+        if (newReviews.length < 20) {
+          setHasMore(false);
+        }
+      } else {
+        setHasMore(false);
+      }
+    }
+  }, [fetcher.data]);
+
+  const loadMoreReviews = () => {
+    if (fetcher.state !== "idle") return;
+    // Hits the current route loader cleanly in the background
+    fetcher.load(`?mode=json&offset=${offset}`);
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-6 sm:p-8 shadow-xs">
@@ -157,7 +219,7 @@ export default function BookDetails() {
               <div key={review.id} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-semibold text-gray-800">
-                    {review.first_name}
+                    {review.first_name} {review.last_name}
                   </span>
                   <span className="text-lg text-orange-500">
                     {"★".repeat(review.rating)}
@@ -169,6 +231,18 @@ export default function BookDetails() {
                 </p>
               </div>
             ))}
+
+            {/* Load More Review Trigger Hook */}
+            {hasMore && (
+              <button
+                type="button"
+                onClick={loadMoreReviews}
+                disabled={fetcher.state !== "idle"}
+                className="w-full mt-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
+              >
+                {fetcher.state !== "idle" ? "Loading next reviews..." : "Load More Reviews"}
+              </button>
+            )}
           </div>
         )}
       </div>
