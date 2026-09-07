@@ -21,7 +21,7 @@ if (process.env.NODE_ENV === "production") {
     connectionString,
     // Optimal defaults for benchmarking. We can adjust 'max' later 
     // when comparing VMs to Managed Azure databases.
-    max: 20, 
+    max: 75, 
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
   });

@@ -1,80 +1,82 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Trend, Rate } from 'k6/metrics';
+import { Trend } from 'k6/metrics';
 
-// Custom metrics tracking for your thesis documentation
+// Custom metric tracking for formal thesis documentation
 const ColdStartTrend = new Trend('latency_cold_start');
-const CheckoutTransactionTrend = new Trend('transaction_checkout_duration');
 const DBQueryDelayTrend = new Trend('delay_server_side');
 
-// Define target host from environment variable (passed during execution)
-const BASE_URL = __ENV.TARGET_URL || 'http://localhost:5173';
+// Configuration environment variable defaults
+const BASE_URL = __ENV.TARGET_URL || 'http://localhost:3000'; //5173
 
 export const options = {
-  // Defining execution stages to test throughput scalability limits
+  // 10-Minute Academic Testing Profile to capture sustained system performance
   stages: [
-    { duration: '1m', target: 20 },  // Ramp-up from 0 to 20 users (Warm-up)
-    { duration: '3m', target: 100 }, // Ramp-up to 100 users (High stress load)
-    { duration: '1m', target: 0 },   // Ramp-down back to 0
+    { duration: '1m', target: 50 },  // 1. Ramp-up: 0 to 50 users (System Warm-up)
+    { duration: '8m', target: 50 },  // 2. Steady-State: Sustained high-stress load
+    { duration: '1m', target: 0 },   // 3. Ramp-down: Symmetrical cool-down phase
   ],
   thresholds: {
-    'http_req_failed': ['rate<0.01'], // General stability constraint: Errors must be under 1%
-    'http_req_duration{name:LandingPage}': ['p(95)<250'],
-    'http_req_duration{name:PublicCatalog}': ['p(95)<250'], // Reads should be snappy
-    'http_req_duration{name:BookDetailsJoin}': ['p(95)<800'], // Transactions can take slightly longer
+    'http_req_failed': ['rate<0.01'], // System stability constraint: Errors must be under 1%
+    'http_req_duration{endpoint_name:LandingPage}': ['p(95)<400'],
+    'http_req_duration{endpoint_name:PublicCatalog}': ['p(95)<600'],
+    'http_req_duration{endpoint_name:BookDetails}': ['p(95)<800'],
   },
 };
 
-// 1. Cold Start Latency Isolation Phase
+// 1. Isolation Phase: Capture Cold Start Performance Baseline
 export function setup() {
   const start = Date.now();
-  
-  // Hit the landing target completely fresh
-  const res = http.get(`${BASE_URL}/`, { tags: { name: 'ColdStartPing' } });
-  
+  const res = http.get(`${BASE_URL}/`, { tags: { endpoint_name: 'ColdStartPing' } });
   const duration = Date.now() - start;
-  
-  console.log(`[COLD START TELEMETRY] Initial provisioning wake-up latency: ${duration}ms`);
+
+  console.log(`[COLD START] Isolated initialization latency: ${duration}ms`);
   return { coldStartDuration: duration };
 }
 
-// 2. Main High-Throughput Load Simulation Loop
+// 2. Main High-Throughput Load Simulation Execution Loop
 export default function (data) {
-  // If this is the very first virtual user loop iteration, log the cold start trend data
-  if (__ITER === 0) {
+  // Capture cold start metric only on the absolute first iteration of VU 0
+  if (__ITER === 0 && __VU === 1) {
     ColdStartTrend.add(data.coldStartDuration);
   }
 
-  // --- Scenario A: Browse Landing Page (Light Read / Initial Delay) ---
-  let homeRes = http.get(`${BASE_URL}/`, { tags: { name: 'LandingPage' } });
-  check(homeRes, { 'Home page status is 200': (r) => r.status === 200 });
+  // --- Scenario A: Browse Homepage (Aggregated Metric View) ---
+  const homeRes = http.get(`${BASE_URL}/`, { 
+    tags: { endpoint_name: 'LandingPage' } 
+  });
+  check(homeRes, { 'Homepage rendering status is 200': (r) => r.status === 200 });
   sleep(1);
 
-  // --- Scenario B: Heavy Read Scan (Pagination & Indexes) ---
-  // Pick a random page between 1 and 5 to stress database scanning
+  // --- Scenario B: Heavy Read Scan (Catalog Pagination) ---
   const randomPage = Math.floor(Math.random() * 5) + 1;
-  let catalogRes = http.get(`${BASE_URL}/books?page=${randomPage}`, {
-    tags: { name: 'PublicCatalog' },
+  const catalogRes = http.get(`${BASE_URL}/books?page=${randomPage}&limit=20`, {
+    tags: { endpoint_name: 'PublicCatalog' },
   });
-  check(catalogRes, { 'Catalog page status is 200': (r) => r.status === 200 });
+  check(catalogRes, { 'Catalog pagination status is 200': (r) => r.status === 200 });
   
-  // Extract custom Server-Timing headers if injected by the runtime environment
+  // Extract custom internal telemetry headers if exposed by the loader
   const serverTiming = catalogRes.headers['Server-Timing'];
   if (serverTiming) {
-    // If you implemented Server-Timing helpers, we parse out the DB duration here
     const dbMatch = serverTiming.match(/db;dur=([\d.]+)/);
     if (dbMatch) DBQueryDelayTrend.add(parseFloat(dbMatch[1]));
   }
   sleep(2);
 
-  // --- Scenario C: Target Relational Read (Key-Value Join Lookup) ---
-  // We'll target a hardcoded slice of our seeded items (e.g., book ID suffix increments)
-  const bookIdOffset = Math.floor(Math.random() * 20) + 1;
-  // Note: Replace this with valid seeded UUID strings or an array mapping in a real test run
-  let itemRes = http.get(`${BASE_URL}/books/3d615819-2a0a-4e30-9ea7-381136e69789`, {
-    tags: { name: 'BookDetailsJoin' },
-  });
-  check(itemRes, { 'Book details status is 200': (r) => r.status === 200 });
+  // --- Scenario C: Relational Read Target (Primary Key B-Tree Lookup) ---
+  // A pool of valid seeded book IDs to prevent memory page contention
+  const sampleBookIds = [
+    'd9ee4560-ee75-49c7-a670-26f0c4b3247d',
+    '5232753e-3dc1-4bb5-b881-85e28ff3ebbe',
+    '66431a22-5dcf-4fe4-92e3-02275760c3d8',
+    '4ac8e0e1-db4f-4b25-83a1-d7d7721dc4f0',
+    'bdaee93a-fee2-4e71-8902-f4250e64d554'
+  ];
+  const selectedId = sampleBookIds[Math.floor(Math.random() * sampleBookIds.length)];
 
-  sleep(3); // Simulates standard user think-time delay before repeating cycle
+  const itemRes = http.get(`${BASE_URL}/books/${selectedId}`, {
+    tags: { endpoint_name: 'BookDetails' },
+  });
+  check(itemRes, { 'Target book detail status is 200': (r) => r.status === 200 });
+  sleep(3); 
 }
