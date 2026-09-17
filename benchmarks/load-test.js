@@ -7,7 +7,7 @@ const ColdStartTrend = new Trend('latency_cold_start');
 const DBQueryDelayTrend = new Trend('delay_server_side');
 
 // Configuration environment variable defaults
-const BASE_URL = __ENV.TARGET_URL || 'http://localhost:3000'; //5173
+const BASE_URL = __ENV.TARGET_URL || 'http://localhost:5173'; //5173
 
 export const options = {
   // 10-Minute Academic Testing Profile to capture sustained system performance
@@ -68,7 +68,7 @@ export default function (data) {
   const sampleBookIds = [
     'd9ee4560-ee75-49c7-a670-26f0c4b3247d',
     '5232753e-3dc1-4bb5-b881-85e28ff3ebbe',
-    '66431a22-5dcf-4fe4-92e3-02275760c3d8',
+    '82da1400-a14f-486e-bf83-4e9c99a3aef9',
     '4ac8e0e1-db4f-4b25-83a1-d7d7721dc4f0',
     'bdaee93a-fee2-4e71-8902-f4250e64d554'
   ];
