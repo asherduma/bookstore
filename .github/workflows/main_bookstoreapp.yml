@@ -29,8 +29,8 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Remove node_modules
-        run: rm -rf node_modules
+      - name: Prune dev dependencies
+        run: npm prune --production
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
